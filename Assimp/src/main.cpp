@@ -15,6 +15,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <unordered_set>
 
 
 #define LOG_FPS
@@ -176,6 +177,8 @@ int main() {
 	Frustum frustum = Frustum(near, far, r, t);
 
 	auto last = c.getElapsedTime();
+
+	std::unordered_set<sf::Keyboard::Key> pressedKeys;
 	while (window.isOpen()) {
 		// Check for events.
 		sf::Event ev;
@@ -183,6 +186,38 @@ int main() {
 			if (ev.type == sf::Event::Closed) {
 				window.close();
 			}
+			else if (ev.type == sf::Event::KeyPressed) {
+				pressedKeys.insert(ev.key.code);
+			}
+			else if (ev.type == sf::Event::KeyReleased) {
+				pressedKeys.erase(ev.key.code);
+			}
+		}
+
+		// Transform object based on what keys are still held down.
+		if (pressedKeys.find(sf::Keyboard::Key::A) != pressedKeys.end()) {
+			bunnyPosition.x -= 0.004;
+		}
+		if (pressedKeys.find(sf::Keyboard::Key::D) != pressedKeys.end()) {
+			bunnyPosition.x += 0.004;
+		}
+		if (pressedKeys.find(sf::Keyboard::Key::S) != pressedKeys.end()) {
+			bunnyPosition.y -= 0.004;
+		}
+		if (pressedKeys.find(sf::Keyboard::Key::W) != pressedKeys.end()) {
+			bunnyPosition.y += 0.004;
+		}
+		if (pressedKeys.find(sf::Keyboard::Key::Left) != pressedKeys.end()) {
+			bunnyOrientation.y -= 0.006;
+		}
+		if (pressedKeys.find(sf::Keyboard::Key::Right) != pressedKeys.end()) {
+			bunnyOrientation.y += 0.006;
+		}
+		if (pressedKeys.find(sf::Keyboard::Key::Up) != pressedKeys.end()) {
+			bunnyOrientation.x -= 0.006;
+		}
+		if (pressedKeys.find(sf::Keyboard::Key::Down) != pressedKeys.end()) {
+			bunnyOrientation.x += 0.006;
 		}
 		
 #ifdef LOG_FPS
@@ -193,8 +228,6 @@ int main() {
 		last = now;
 #endif
 
-		// Rotate the bunny by incrementing the orientation. This is a "yaw" around the y axis.
-		bunnyOrientation.y += 0.001;
 
 		// Render the scene.
 		window.clear();
