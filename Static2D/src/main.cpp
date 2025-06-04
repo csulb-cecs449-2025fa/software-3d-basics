@@ -32,7 +32,7 @@ void drawMesh(sf::RenderWindow& window, const std::vector<Vertex2D>& vertices, c
 
 
 int main() {
-	sf::RenderWindow window{ sf::VideoMode{1200, 800}, "SFML Demo" };
+	sf::RenderWindow window{ sf::VideoMode::getFullscreenModes().at(0), "SFML Demo" };
 	sf::Clock c;
 
 	// Define the vertices and faces of the mesh we're drawing.
@@ -51,9 +51,8 @@ int main() {
 	auto last = c.getElapsedTime();
 	while (window.isOpen()) {
 		// Check for events.
-		sf::Event ev;
-		while (window.pollEvent(ev)) {
-			if (ev.type == sf::Event::Closed) {
+		while (const std::optional event = window.pollEvent()) {
+			if (event->is<sf::Event::Closed>()) {
 				window.close();
 			}
 		}

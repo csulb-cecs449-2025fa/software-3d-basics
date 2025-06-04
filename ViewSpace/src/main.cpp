@@ -18,7 +18,7 @@ struct Vertex3D {
 // Parameters to define the viewing frustum.
 struct Frustum {
 	float near;
-	float far; 
+	float far;
 	float left;
 	float right;
 	float bottom;
@@ -61,7 +61,7 @@ void drawMesh(sf::RenderWindow& window, const Frustum& frustum,
 		auto screenB = clipToScreen(viewport, clipB);
 		auto screenC = clipToScreen(viewport, clipC);
 
-		drawTriangle(window, 
+		drawTriangle(window,
 			sf::Vector2i(screenA.x, screenA.y),
 			sf::Vector2i(screenB.x, screenB.y),
 			sf::Vector2i(screenC.x, screenC.y),
@@ -72,7 +72,8 @@ void drawMesh(sf::RenderWindow& window, const Frustum& frustum,
 
 
 int main() {
-	sf::RenderWindow window{ sf::VideoMode{1200, 800}, "SFML Demo" };
+	sf::RenderWindow window{ sf::VideoMode::getFullscreenModes().at(0), "SFML Demo" };
+
 	sf::Clock c;
 
 	// Define the vertices and faces of the mesh we're drawing.
@@ -118,13 +119,12 @@ int main() {
 	auto last = c.getElapsedTime();
 	while (window.isOpen()) {
 		// Check for events.
-		sf::Event ev;
-		while (window.pollEvent(ev)) {
-			if (ev.type == sf::Event::Closed) {
+		while (const std::optional event = window.pollEvent()) {
+			if (event->is<sf::Event::Closed>()) {
 				window.close();
 			}
 		}
-		
+
 #ifdef LOG_FPS
 		// FPS calculation.
 		auto now = c.getElapsedTime();

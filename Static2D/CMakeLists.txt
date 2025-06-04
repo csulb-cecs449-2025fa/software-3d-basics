@@ -1,8 +1,8 @@
 ﻿# Add source to this project's executable.
 add_executable (Static2D "src/main.cpp" "include/lines.h" "include/triangles.h" "src/lines.cpp" "src/triangles.cpp") 
 
-find_package(SFML COMPONENTS system window graphics CONFIG REQUIRED)
-target_link_libraries(Static2D PRIVATE sfml-system sfml-network sfml-graphics sfml-window)
+find_package(SFML COMPONENTS System Window Graphics CONFIG REQUIRED)
+target_link_libraries(Static2D PRIVATE SFML::System SFML::Window SFML::Graphics)
 
 find_package(assimp CONFIG REQUIRED)
 target_link_libraries(Static2D PRIVATE assimp::assimp)

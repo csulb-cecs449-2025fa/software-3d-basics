@@ -104,10 +104,10 @@ void drawMesh(sf::RenderWindow& window, const Frustum& frustum,
 	}
 }
 
-
 int main() {
-	sf::RenderWindow window{ sf::VideoMode{1200, 800}, "SFML Demo" };
+	sf::RenderWindow window{ sf::VideoMode::getFullscreenModes().at(0), "SFML Demo" };
 	sf::Clock c;
+	auto last = c.getElapsedTime();
 
 	// Define the vertices and faces of the mesh we're drawing.
 	// These are now LOCAL SPACE COORDINATES. We will separately set the
@@ -164,15 +164,15 @@ int main() {
 	float r = t * ratio;
 	Frustum frustum = Frustum(near, far, r, t);
 
-	auto last = c.getElapsedTime();
+
 	while (window.isOpen()) {
-		// Check for events.
-		sf::Event ev;
-		while (window.pollEvent(ev)) {
-			if (ev.type == sf::Event::Closed) {
+		while (const std::optional event = window.pollEvent()) {
+			if (event->is<sf::Event::Closed>()) {
 				window.close();
 			}
 		}
+		window.clear();
+
 		
 #ifdef LOG_FPS
 		// FPS calculation.
