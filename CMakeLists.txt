@@ -18,5 +18,6 @@ add_subdirectory ("Vertex3D")
 add_subdirectory ("ViewSpace")
 add_subdirectory ("WorldSpace")
 add_subdirectory ("LocalSpace")
+add_subdirectory ("Matrices")
 add_subdirectory ("Assimp")
 
