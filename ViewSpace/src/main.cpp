@@ -1,12 +1,9 @@
 ﻿#include <SFML/Graphics.hpp>
 #include <iostream>
-
-#include <memory>
-#include <glm/ext.hpp>
 #include <vector>
+#include <numbers>
+
 #include "triangles.h"
-#define _USE_MATH_DEFINES // for M_PI
-#include <math.h>
 
 #define LOG_FPS
 struct Vertex3D {
@@ -27,18 +24,18 @@ struct Frustum {
 
 // Transform from view coordinates to clip coordinates.
 Vertex3D viewToClip(const Frustum& frustum, const Vertex3D& view) {
-	float xp = view.x * -frustum.near / view.z;
-	float yp = view.y * -frustum.near / view.z;
-	float xClip = xp / frustum.right;
-	float yClip = yp / frustum.top;
-	return Vertex3D(xClip, yClip, 0);
+	float xp{ view.x * -frustum.near / view.z };
+	float yp{ view.y * -frustum.near / view.z };
+	float xClip{ xp / frustum.right };
+	float yClip{ yp / frustum.top };
+	return Vertex3D{ xClip, yClip, 0.0f };
 }
 
 // Linear interpolate from clip coordinates to screen coordinates.
 sf::Vector2i clipToScreen(const sf::View& viewport, const Vertex3D& clip) {
-	int32_t xs = static_cast<uint32_t>(viewport.getSize().x * (clip.x + 1) / 2.0);
-	int32_t ys = static_cast<uint32_t>(viewport.getSize().y - viewport.getSize().y * (clip.y + 1) / 2.0);
-	return sf::Vector2i(xs, ys);
+	int32_t xs{ static_cast<int32_t>(viewport.getSize().x * (clip.x + 1) / 2.0) };
+	int32_t ys{ static_cast<int32_t>(viewport.getSize().y - viewport.getSize().y * (clip.y + 1) / 2.0) };
+	return sf::Vector2i{ xs, ys };
 }
 
 void drawMesh(sf::RenderWindow& window, const Frustum& frustum,
@@ -47,24 +44,24 @@ void drawMesh(sf::RenderWindow& window, const Frustum& frustum,
 	// Pull each vertex out of the vertices list.
 	// Transform them from clip coordinates to screen coordinates.
 	// Draw a triangle connecting them.
-	for (size_t i = 0; i < faces.size(); i = i + 3) {
-		auto& vertexA = vertices[faces[i]];
-		auto& vertexB = vertices[faces[i + 1]];
-		auto& vertexC = vertices[faces[i + 2]];
+	for (size_t i{ 0 }; i < faces.size(); i = i + 3) {
+		auto& vertexA{ vertices[faces[i]] };
+		auto& vertexB{ vertices[faces[i + 1]] };
+		auto& vertexC{ vertices[faces[i + 2]] };
 
-		auto clipA = viewToClip(frustum, vertexA);
-		auto clipB = viewToClip(frustum, vertexB);
-		auto clipC = viewToClip(frustum, vertexC);
+		auto clipA{ viewToClip(frustum, vertexA) };
+		auto clipB{ viewToClip(frustum, vertexB) };
+		auto clipC{ viewToClip(frustum, vertexC) };
 
-		auto viewport = window.getView();
-		auto screenA = clipToScreen(viewport, clipA);
-		auto screenB = clipToScreen(viewport, clipB);
-		auto screenC = clipToScreen(viewport, clipC);
+		auto& viewport{ window.getView() };
+		auto screenA{ clipToScreen(viewport, clipA) };
+		auto screenB{ clipToScreen(viewport, clipB) };
+		auto screenC{ clipToScreen(viewport, clipC) };
 
 		drawTriangle(window,
-			sf::Vector2i(screenA.x, screenA.y),
-			sf::Vector2i(screenB.x, screenB.y),
-			sf::Vector2i(screenC.x, screenC.y),
+			sf::Vector2i{ screenA.x, screenA.y },
+			sf::Vector2i{ screenB.x, screenB.y },
+			sf::Vector2i{ screenC.x, screenC.y },
 			sf::Color::White
 		);
 	}
@@ -79,7 +76,7 @@ int main() {
 	// Define the vertices and faces of the mesh we're drawing.
 	// These are now VIEW COORDINATES, so we need to "back away" from the camera,
 	// which is at (0, 0, 0).
-	std::vector<Vertex3D> cubeVertices = {
+	std::vector<Vertex3D> cubeVertices {
 		{ 0.5, 0.5, -3.5 },
 		{ -0.5, 0.5, -3.5 },
 		{ -0.5, -0.5, -3.5 },
@@ -89,7 +86,7 @@ int main() {
 		{ -0.5, -0.5, -2.5 },
 		{ 0.5, -0.5, -2.5 }
 	};
-	std::vector<uint32_t> cubeFaces = {
+	std::vector<uint32_t> cubeFaces {
 		0, 1, 2,
 		0, 2, 3,
 		4, 0, 3,
@@ -106,20 +103,20 @@ int main() {
 
 	// Construct the frustum. Start with parameters near, far, fovy, and aspect ratio
 	// to compute left, right, bottom, and top.
-	float fovy = 60;
-	float ratio = static_cast<float>(window.getSize().x) / (window.getSize().y);
-	float near = 0.1;
-	float far = 100.0;
-	float t = near * tan((fovy * M_PI / 180.0) / 2);
-	float b = -t;
-	float r = t * ratio;
-	float l = -r;
-	Frustum frustum = Frustum(near, far, l, r, b, t);
+	float fovy{ 60.0f };
+	float ratio{ static_cast<float>(window.getSize().x) / (window.getSize().y) };
+	float near{ 0.1f };
+	float far{ 100.0f };
+	float t{ static_cast<float>(near * tan((fovy * std::numbers::pi_v<float> / 180.0f) / 2) )};
+	float b{ -t };
+	float r{ t * ratio };
+	float l{ -r };
+	Frustum frustum{ near, far, l, r, b, t };
 
-	auto last = c.getElapsedTime();
+	auto last{ c.getElapsedTime() };
 	while (window.isOpen()) {
 		// Check for events.
-		while (const std::optional event = window.pollEvent()) {
+		while (const std::optional event{ window.pollEvent() }) {
 			if (event->is<sf::Event::Closed>()) {
 				window.close();
 			}
@@ -127,8 +124,8 @@ int main() {
 
 #ifdef LOG_FPS
 		// FPS calculation.
-		auto now = c.getElapsedTime();
-		auto diff = now - last;
+		auto now{ c.getElapsedTime() };
+		auto diff{ now - last };
 		std::cout << 1 / diff.asSeconds() << " FPS " << std::endl;
 		last = now;
 #endif

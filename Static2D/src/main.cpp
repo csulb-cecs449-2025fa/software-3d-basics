@@ -16,15 +16,15 @@ void drawMesh(sf::RenderWindow& window, const std::vector<Vertex2D>& vertices, c
 	// Loop through the list of face indexes, 3 at a time.
 	// Pull each vertex out of the vertices list.
 	// Draw a triangle connecting them.
-	for (size_t i = 0; i < faces.size(); i = i + 3) {
-		auto& vertexA = vertices[faces[i]];
-		auto& vertexB = vertices[faces[i + 1]];
-		auto& vertexC = vertices[faces[i + 2]];
+	for (size_t i{ 0 }; i < faces.size(); i = i + 3) {
+		auto& vertexA{ vertices[faces[i]] };
+		auto& vertexB{ vertices[faces[i + 1]] };
+		auto& vertexC{ vertices[faces[i + 2]] };
 
-		drawTriangle(window, 
-			sf::Vector2i(vertexA.x, vertexA.y),
-			sf::Vector2i(vertexB.x, vertexB.y),
-			sf::Vector2i(vertexC.x, vertexC.y),
+		drawTriangle(window,
+			sf::Vector2i{ vertexA.x, vertexA.y },
+			sf::Vector2i{ vertexB.x, vertexB.y },
+			sf::Vector2i{ vertexC.x, vertexC.y },
 			sf::Color::White
 		);
 	}
@@ -36,31 +36,31 @@ int main() {
 	sf::Clock c;
 
 	// Define the vertices and faces of the mesh we're drawing.
-	std::vector<Vertex2D> houseVertices = {
+	std::vector<Vertex2D> houseVertices {
 		{300, 300},
 		{600, 300},
 		{300, 500},
 		{600, 500},
 		{450, 150}
 	};
-	std::vector<uint32_t> houseFaces = {
+	std::vector<uint32_t> houseFaces {
 		0, 1, 2, 1, 3, 2, 0, 4, 1
 	};
 
 
-	auto last = c.getElapsedTime();
+	auto last{ c.getElapsedTime() };
 	while (window.isOpen()) {
 		// Check for events.
-		while (const std::optional event = window.pollEvent()) {
+		while (const std::optional event{ window.pollEvent() }) {
 			if (event->is<sf::Event::Closed>()) {
 				window.close();
 			}
 		}
-		
+
 #ifdef LOG_FPS
 		// FPS calculation.
-		auto now = c.getElapsedTime();
-		auto diff = now - last;
+		auto now{ c.getElapsedTime() };
+		auto diff{ now - last };
 		std::cout << 1 / diff.asSeconds() << " FPS " << std::endl;
 		last = now;
 #endif

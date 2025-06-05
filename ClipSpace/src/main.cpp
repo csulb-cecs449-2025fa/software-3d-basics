@@ -14,9 +14,9 @@ struct Vertex2D {
 
 // Linear interpolate from clip coordinates to screen coordinates.
 sf::Vector2i clipToScreen(const sf::View& viewport, const Vertex2D& clip) {
-	int32_t xs = static_cast<uint32_t>(viewport.getSize().x * (clip.x + 1) / 2.0);
-	int32_t ys = static_cast<uint32_t>(viewport.getSize().y - viewport.getSize().y * (clip.y + 1) / 2.0);
-	return sf::Vector2i(xs, ys);
+	int32_t xs{ static_cast<int32_t>(viewport.getSize().x * (clip.x + 1) / 2.0) };
+	int32_t ys{ static_cast<int32_t>(viewport.getSize().y - viewport.getSize().y * (clip.y + 1) / 2.0) };
+	return sf::Vector2i{ xs, ys };
 }
 
 void drawMesh(sf::RenderWindow& window, const std::vector<Vertex2D>& vertices, const std::vector<uint32_t>& faces) {
@@ -24,20 +24,20 @@ void drawMesh(sf::RenderWindow& window, const std::vector<Vertex2D>& vertices, c
 	// Pull each vertex out of the vertices list.
 	// Transform them from clip coordinates to screen coordinates.
 	// Draw a triangle connecting them.
-	for (size_t i = 0; i < faces.size(); i = i + 3) {
-		auto& vertexA = vertices[faces[i]];
-		auto& vertexB = vertices[faces[i + 1]];
-		auto& vertexC = vertices[faces[i + 2]];
+	for (size_t i{ 0 }; i < faces.size(); i = i + 3) {
+		auto& vertexA{ vertices[faces[i]] };
+		auto& vertexB{ vertices[faces[i + 1]] };
+		auto& vertexC{ vertices[faces[i + 2]] };
 
-		auto viewport = window.getView();
-		auto screenA = clipToScreen(viewport, vertexA);
-		auto screenB = clipToScreen(viewport, vertexB);
-		auto screenC = clipToScreen(viewport, vertexC);
+		auto viewport{ window.getView() };
+		auto screenA{ clipToScreen(viewport, vertexA) };
+		auto screenB{ clipToScreen(viewport, vertexB) };
+		auto screenC{ clipToScreen(viewport, vertexC) };
 
 		drawTriangle(window,
-			sf::Vector2i(screenA.x, screenA.y),
-			sf::Vector2i(screenB.x, screenB.y),
-			sf::Vector2i(screenC.x, screenC.y),
+			sf::Vector2i{ screenA.x, screenA.y },
+			sf::Vector2i{ screenB.x, screenB.y },
+			sf::Vector2i{ screenC.x, screenC.y },
 			sf::Color::White
 		);
 	}
@@ -50,21 +50,21 @@ int main() {
 
 
 	// Define the vertices and faces of the mesh we're drawing.
-	std::vector<Vertex2D> houseVertices = {
+	std::vector<Vertex2D> houseVertices {
 		{-0.5, 0.0},
 		{0.5, 0.0},
 		{-0.5, -0.5},
 		{0.5, -0.5},
 		{0.0, 0.5}
 	};
-	std::vector<uint32_t> houseFaces = {
+	std::vector<uint32_t> houseFaces {
 		0, 1, 2, 1, 3, 2, 0, 4, 1
 	};
 
-	auto last = c.getElapsedTime();
-
+	auto last{ c.getElapsedTime() };
 	while (window.isOpen()) {
-		while (const std::optional event = window.pollEvent()) {
+		// Check for events.
+		while (const std::optional event{ window.pollEvent() }) {
 			if (event->is<sf::Event::Closed>()) {
 				window.close();
 			}
@@ -72,8 +72,8 @@ int main() {
 
 #ifdef LOG_FPS
 		// FPS calculation.
-		auto now = c.getElapsedTime();
-		auto diff = now - last;
+		auto now{ c.getElapsedTime() };
+		auto diff{ now - last };
 		std::cout << 1 / diff.asSeconds() << " FPS " << std::endl;
 		last = now;
 #endif

@@ -142,6 +142,7 @@ void drawMesh(sf::RenderWindow& window, const Frustum& frustum,
 		auto screenB = clipToScreen(viewport, clipB);
 		auto screenC = clipToScreen(viewport, clipC);
 
+
 		drawTriangle(window, 
 			sf::Vector2i(screenA.x, screenA.y),
 			sf::Vector2i(screenB.x, screenB.y),
@@ -169,9 +170,9 @@ int main() {
 	float fovy = 60; // This is a fairly narrow field of vision, for a screen that doesn't match
 					 // the exact ratio of human vision.
 	float ratio = static_cast<float>(window.getSize().x) / (window.getSize().y);
-	float near = 0.1;
-	float far = 100.0;
-	float t = near * tan((fovy * M_PI / 180.0) / 2);
+	float near = 0.1f;
+	float far = 100.0f;
+	float t = near * tan((fovy * M_PI / 180.0f) / 2);
 	float r = t * ratio;
 	Frustum frustum = Frustum(near, far, r, t);
 
@@ -193,7 +194,7 @@ int main() {
 #endif
 
 		// Rotate the bunny by incrementing the orientation. This is a "yaw" around the y axis.
-		bunnyOrientation.y += 0.001;
+		bunnyPosition.z += 0.001f;
 
 		// Render the scene.
 		window.clear();
