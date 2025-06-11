@@ -130,9 +130,9 @@ int main() {
 	std::vector<uint32_t> bunnyFaces{};
 	assimpLoad("models/bunny.obj", bunnyVertices, bunnyFaces);
 
-	glm::vec3 bunnyPosition{ glm::vec3(0, -1, -2.5) };
-	glm::vec3 bunnyOrientation{ glm::vec3(0, 0, 0) };
-	glm::vec3 bunnyScale{ glm::vec3(9, 9, 9) };
+	glm::vec3 bunnyPosition{ 0, -1, -2.5 };
+	glm::vec3 bunnyOrientation{ 0, 0, 0 };
+	glm::vec3 bunnyScale{ 9, 9, 9 };
 
 	float fovy{ 60.0f };
 	float ratio{ static_cast<float>(window.getSize().x) / (window.getSize().y) };
@@ -164,8 +164,8 @@ int main() {
 		bunnyOrientation.y += 0.001f;
 
 		glm::mat4 bunnyModelMatrix{ buildModelMatrix(bunnyPosition, bunnyOrientation, bunnyScale) };
-		glm::mat4 viewMatrix{ glm::mat4(1) };
-		glm::mat4 projectionMatrix{ glm::mat4(1) };
+		glm::mat4 viewMatrix{ 1 }; // identity matrix == camera at origin, looking down -z axis.
+		glm::mat4 projectionMatrix{ 1 };
 
 		// Render the scene.
 		window.clear();
