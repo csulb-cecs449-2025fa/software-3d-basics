@@ -15,6 +15,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
+#include <numbers>
 
 
 #define LOG_FPS
@@ -37,13 +38,13 @@ const size_t VERTICES_PER_FACE = 3;
 // compatible with the rest of our application.
 void fromAssimpMesh(const aiMesh* mesh, std::vector<Vertex3D> &vertices,
 	std::vector<uint32_t> &faces) {
-	for (size_t i = 0; i < mesh->mNumVertices; i++) {
+	for (size_t i{ 0 }; i < mesh->mNumVertices; ++i) {
 		// Each "vertex" from Assimp has to be transformed into a Vertex3D in our application.
-		vertices.push_back({ mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z });
+		vertices.push_back(Vertex3D{ mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z });
 	}
 
 	faces.reserve(mesh->mNumFaces * VERTICES_PER_FACE);
-	for (size_t i = 0; i < mesh->mNumFaces; i++) {
+	for (size_t i{ 0 }; i < mesh->mNumFaces; ++i) {
 		// We assume the faces are triangular, so we push three face indexes at a time into our faces list.
 		faces.push_back(mesh->mFaces[i].mIndices[0]);
 		faces.push_back(mesh->mFaces[i].mIndices[1]);
@@ -56,7 +57,7 @@ void fromAssimpMesh(const aiMesh* mesh, std::vector<Vertex3D> &vertices,
 void assimpLoad(const std::string& path, std::vector<Vertex3D>& vertices, std::vector<uint32_t>& faces) {
 	Assimp::Importer importer;
 
-	const aiScene* scene = importer.ReadFile(path, aiProcessPreset_TargetRealtime_MaxQuality);
+	const aiScene* scene{ importer.ReadFile(path, aiProcessPreset_TargetRealtime_MaxQuality) };
 
 	// If the import failed, report it
 	if (nullptr == scene) {
@@ -68,85 +69,118 @@ void assimpLoad(const std::string& path, std::vector<Vertex3D>& vertices, std::v
 	}
 }
 
-Vertex3D localToWorld(
-	const sf::Vector3f& position, const sf::Vector3f& orientation, const sf::Vector3f& scale,
+Vertex3D localToWorld(const sf::Vector3f& position, const sf::Vector3f& orientation, const sf::Vector3f& scale,
 	const Vertex3D& vertex) {
 	// Rotate, then scale, then translate.
 	// When rotating, we first yaw, then pitch, then roll.
 	// Yaw: rotating around the y-axis.
-	float yawX = vertex.x * std::cos(orientation.y) + vertex.z * std::sin(orientation.y);
-	float yawY = vertex.y;
-	float yawZ = -vertex.x * std::sin(orientation.y) + vertex.z * std::cos(orientation.y);
+	float yawX{ vertex.x * std::cos(orientation.y) + vertex.z * std::sin(orientation.y) };
+	float yawY{ vertex.y };
+	float yawZ{ -vertex.x * std::sin(orientation.y) + vertex.z * std::cos(orientation.y) };
 
 	// Pitch: rotating around the x-axis, using (yawX, yawY yawZ) as the starting point.
-	float pitchX = yawX;
-	float pitchY = yawY * std::cos(orientation.x) - yawZ * std::sin(orientation.x);
-	float pitchZ = yawY * std::sin(orientation.x) + yawZ * std::cos(orientation.x);
+	float pitchX{ yawX };
+	float pitchY{ yawY * std::cos(orientation.x) - yawZ * std::sin(orientation.x) };
+	float pitchZ{ yawY * std::sin(orientation.x) - yawZ * std::cos(orientation.x) };
 
 	// Roll: rotating around the z-axis, using (pitchX, pitchY, pitchZ) as the starting point.
-	float rollX = pitchX * std::cos(orientation.z) - pitchY * std::sin(orientation.z);
-	float rollY = pitchX * std::sin(orientation.z) + pitchY * std::cos(orientation.z);
-	float rollZ = pitchZ;
+	float rollX{ pitchX * std::cos(orientation.z) - pitchY * std::sin(orientation.z) };
+	float rollY{ pitchX * std::sin(orientation.z) + pitchY * std::cos(orientation.z) };
+	float rollZ{ pitchZ };
 
 	// Scale (rollX, rollY, rollZ) by the components of the scale vec3.
-	float scaleX = rollX * scale.x; // fix these
-	float scaleY = rollY * scale.y;
-	float scaleZ = rollZ * scale.z;
+	float scaleX{ rollX * scale.x };
+	float scaleY{ rollY * scale.y };
+	float scaleZ{ rollZ * scale.z };
 
 	// Translate (scaleX, scaleY, scaleZ) by the components of the position vec3.
-	float translateX = scaleX + position.x;
-	float translateY = scaleY + position.y;
-	float translateZ = scaleZ + position.z;
+	float translateX{ scaleX + position.x };
+	float translateY{ scaleY + position.y };
+	float translateZ{ scaleZ + position.z };
 
-	return Vertex3D(translateX, translateY, translateZ);
+	return Vertex3D{ translateX, translateY, translateZ };
 }
+
+Vertex3D worldToView(const sf::Vector3f& cameraPosition, const sf::Vector3f& cameraOrientation, const Vertex3D& vertex) {
+	// Assumption: the camera is put in the scene first by orienting it (yaw, pitch, roll), 
+	// then translating to its position. Instead of positioning the camera in the world, we 
+	// will invert the camera's transformation and apply it to each vertex.
+
+	// Reverse the position and orientation value.
+	sf::Vector3f cOrientation{ -cameraOrientation };
+
+	float translateX{ vertex.x - cameraPosition.x };
+	float translateY{ vertex.y - cameraPosition.y };
+	float translateZ{ vertex.z - cameraPosition.z };
+
+	float rollX{ translateX * std::cos(cOrientation.z) - translateY * std::sin(cOrientation.z) };
+	float rollY{ translateX * std::sin(cOrientation.z) + translateY * std::cos(cOrientation.z) };
+	float rollZ{ translateZ };
+
+	// Pitch: rotating around the x-axis, using (rollX, rollY, rollZ) as the starting point.
+	float pitchX{ rollX };
+	float pitchY{ rollY * std::cos(cOrientation.x) - rollZ * std::sin(cOrientation.x) };
+	float pitchZ{ rollY * std::sin(cOrientation.x) + rollZ * std::cos(cOrientation.x) };
+
+	float yawX{ pitchX * std::cos(cOrientation.y) + pitchZ * std::sin(cOrientation.y) };
+	float yawY{ pitchY };
+	float yawZ{ -pitchX * std::sin(cOrientation.y) + pitchZ * std::cos(cOrientation.y) };
+
+	return Vertex3D{ yawX, yawY, yawZ };
+}
+
+
 
 // Transform from view coordinates to clip coordinates.
 Vertex3D viewToClip(const Frustum& frustum, const Vertex3D& view) {
-	float xp = view.x * -frustum.near / view.z;
-	float yp = view.y * -frustum.near / view.z;
-	float xClip = xp / frustum.right;
-	float yClip = yp / frustum.top;
-	return Vertex3D(xClip, yClip, 0);
+	float xp{ view.x * -frustum.near / view.z };
+	float yp{ view.y * -frustum.near / view.z };
+	float xClip{ xp / frustum.right };
+	float yClip{ yp / frustum.top };
+	return Vertex3D{ xClip, yClip, 0 };
 }
 
 // Linear interpolate from clip coordinates to screen coordinates.
 sf::Vector2i clipToScreen(const sf::View& viewport, const Vertex3D& clip) {
-	int32_t xs = static_cast<uint32_t>(viewport.getSize().x * (clip.x + 1) / 2.0);
-	int32_t ys = static_cast<uint32_t>(viewport.getSize().y - viewport.getSize().y * (clip.y + 1) / 2.0);
-	return sf::Vector2i(xs, ys);
+	int32_t xs{ static_cast<int32_t>(viewport.getSize().x * (clip.x + 1) / 2.0) };
+	int32_t ys{ static_cast<int32_t>(viewport.getSize().y - viewport.getSize().y * (clip.y + 1) / 2.0) };
+	return sf::Vector2i{ xs, ys };
 }
 
 void drawMesh(sf::RenderWindow& window, const Frustum& frustum,
+	const sf::Vector3f& cameraPosition, const sf::Vector3f& cameraOrientation,
 	const sf::Vector3f& position, const sf::Vector3f& orientation, const sf::Vector3f& scale,
 	const std::vector<Vertex3D>& vertices, const std::vector<uint32_t>& faces, sf::Color color) {
 	// Loop through the list of face indexes, 3 at a time.
 	// Pull each vertex out of the vertices list.
 	// Transform them from clip coordinates to screen coordinates.
 	// Draw a triangle connecting them.
-	for (size_t i = 0; i < faces.size(); i = i + 3) {
-		auto& vertexA = vertices[faces[i]];
-		auto& vertexB = vertices[faces[i + 1]];
-		auto& vertexC = vertices[faces[i + 2]];
+	for (size_t i{ 0 }; i < faces.size(); i = i + 3) {
+		auto& localA{ vertices[faces[i]] };
+		auto& localB{ vertices[faces[i + 1]] };
+		auto& localC{ vertices[faces[i + 2]] };
 
-		auto worldA = localToWorld(position, orientation, scale, vertexA);
-		auto worldB = localToWorld(position, orientation, scale, vertexB);
-		auto worldC = localToWorld(position, orientation, scale, vertexC);
+		auto worldA{ localToWorld(position, orientation, scale, localA) };
+		auto worldB{ localToWorld(position, orientation, scale, localB) };
+		auto worldC{ localToWorld(position, orientation, scale, localC) };
 
-		auto clipA = viewToClip(frustum, worldA);
-		auto clipB = viewToClip(frustum, worldB);
-		auto clipC = viewToClip(frustum, worldC);
+		auto viewA{ worldToView(cameraPosition, cameraOrientation, worldA) };
+		auto viewB{ worldToView(cameraPosition, cameraOrientation, worldB) };
+		auto viewC{ worldToView(cameraPosition, cameraOrientation, worldC) };
 
-		auto viewport = window.getView();
-		auto screenA = clipToScreen(viewport, clipA);
-		auto screenB = clipToScreen(viewport, clipB);
-		auto screenC = clipToScreen(viewport, clipC);
+		auto clipA{ viewToClip(frustum, viewA) };
+		auto clipB{ viewToClip(frustum, viewB) };
+		auto clipC{ viewToClip(frustum, viewC) };
 
+		auto viewport{ window.getView() };
+		auto screenA{ clipToScreen(viewport, clipA) };
+		auto screenB{ clipToScreen(viewport, clipB) };
+		auto screenC{ clipToScreen(viewport, clipC) };
 
-		drawTriangle(window, 
-			sf::Vector2i(screenA.x, screenA.y),
-			sf::Vector2i(screenB.x, screenB.y),
-			sf::Vector2i(screenC.x, screenC.y),
+		drawTriangle(window,
+			sf::Vector2i{ screenA.x, screenA.y },
+			sf::Vector2i{ screenB.x, screenB.y },
+			sf::Vector2i{ screenC.x, screenC.y },
 			color
 		);
 	}
@@ -165,16 +199,22 @@ int main() {
 	sf::Vector3f bunnyOrientation = sf::Vector3f(0, 0, 0);
 	sf::Vector3f bunnyScale = sf::Vector3f(9, 9, 9);
 
+
 	// Construct the frustum. Start with parameters near, far, fovy, and aspect ratio
 	// to compute right and top.
-	float fovy = 60; // This is a fairly narrow field of vision, for a screen that doesn't match
-					 // the exact ratio of human vision.
-	float ratio = static_cast<float>(window.getSize().x) / (window.getSize().y);
-	float near = 0.1f;
-	float far = 100.0f;
-	float t = near * tan((fovy * M_PI / 180.0f) / 2);
-	float r = t * ratio;
-	Frustum frustum = Frustum(near, far, r, t);
+	float fovy{ 60.0f };
+	float ratio{ static_cast<float>(window.getSize().x) / (window.getSize().y) };
+	float near{ 0.1f };
+	float far{ 100.0f };
+	float t{ static_cast<float>(near * tan((fovy * std::numbers::pi_v<float> / 180.0f) / 2)) };
+	float b{ -t };
+	float r{ t * ratio };
+	float l{ -r };
+	Frustum frustum{ near, far, r, t };
+
+	// Position the camera.
+	sf::Vector3f cameraPosition{ 0, 0, 1 };
+	sf::Vector3f cameraOrientation{ 0, 0, 0 };
 
 	auto last = c.getElapsedTime();
 	while (window.isOpen()) {
@@ -194,11 +234,15 @@ int main() {
 #endif
 
 		// Rotate the bunny by incrementing the orientation. This is a "yaw" around the y axis.
-		bunnyPosition.z += 0.001f;
+		bunnyOrientation.y += 0.1f;
 
 		// Render the scene.
 		window.clear();
-		drawMesh(window, frustum, bunnyPosition, bunnyOrientation, bunnyScale, bunnyVertices, bunnyFaces, sf::Color::White);
+		drawMesh(window, frustum, 
+			cameraPosition, cameraOrientation,
+			bunnyPosition, bunnyOrientation, bunnyScale, 
+			bunnyVertices, bunnyFaces, 
+			sf::Color::White);
 		window.display();
 	}
 
