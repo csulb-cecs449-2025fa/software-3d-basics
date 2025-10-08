@@ -7,6 +7,10 @@
       "name": "sfml",
       "version>=": "3.0.0"
     },
+    {
+      "name": "libpng",
+      "version>=": "1.6.50"
+    },
     "assimp",
     "glm"
   ]
