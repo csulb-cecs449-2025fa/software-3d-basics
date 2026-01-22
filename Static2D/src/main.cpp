@@ -22,9 +22,9 @@ void drawMesh(sf::RenderWindow& window, const std::vector<Vertex2D>& vertices, c
 		auto& vertexC{ vertices[faces[i + 2]] };
 
 		drawTriangle(window,
-			sf::Vector2i{ vertexA.x, vertexA.y },
-			sf::Vector2i{ vertexB.x, vertexB.y },
-			sf::Vector2i{ vertexC.x, vertexC.y },
+			glm::ivec2 { vertexA.x, vertexA.y },
+			glm::ivec2 { vertexB.x, vertexB.y },
+			glm::ivec2 { vertexC.x, vertexC.y },
 			sf::Color::White
 		);
 	}

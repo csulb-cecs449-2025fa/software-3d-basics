@@ -1,7 +1,5 @@
 ﻿#include <SFML/Graphics.hpp>
 #include <iostream>
-
-#include <memory>
 #include <glm/ext.hpp>
 #include <vector>
 #include "triangles.h"
@@ -13,10 +11,10 @@ struct Vertex2D {
 };
 
 // Linear interpolate from clip coordinates to screen coordinates.
-sf::Vector2i clipToScreen(const sf::View& viewport, const Vertex2D& clip) {
+glm::ivec2 clipToScreen(const sf::View& viewport, const Vertex2D& clip) {
 	int32_t xs{ static_cast<int32_t>(viewport.getSize().x * (clip.x + 1) / 2.0) };
 	int32_t ys{ static_cast<int32_t>(viewport.getSize().y - viewport.getSize().y * (clip.y + 1) / 2.0) };
-	return sf::Vector2i{ xs, ys };
+	return glm::ivec2{ xs, ys };
 }
 
 void drawMesh(sf::RenderWindow& window, const std::vector<Vertex2D>& vertices, const std::vector<uint32_t>& faces) {
@@ -35,9 +33,9 @@ void drawMesh(sf::RenderWindow& window, const std::vector<Vertex2D>& vertices, c
 		auto screenC{ clipToScreen(viewport, vertexC) };
 
 		drawTriangle(window,
-			sf::Vector2i{ screenA.x, screenA.y },
-			sf::Vector2i{ screenB.x, screenB.y },
-			sf::Vector2i{ screenC.x, screenC.y },
+			glm::ivec2{ screenA.x, screenA.y },
+			glm::ivec2{ screenB.x, screenB.y },
+			glm::ivec2{ screenC.x, screenC.y },
 			sf::Color::White
 		);
 	}

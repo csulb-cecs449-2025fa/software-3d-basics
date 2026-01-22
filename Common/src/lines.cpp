@@ -2,8 +2,7 @@
 #include <SFML/Graphics.hpp>
 #include <array>
 
-
-void drawPixel(sf::RenderWindow& window, sf::Vector2i position, sf::Color color) {
+void drawPixel(sf::RenderWindow& window, glm::ivec2 position, sf::Color color) {
 	float pX{ static_cast<float>(position.x) };
 	float pY{ static_cast<float>(position.y) };
 
@@ -22,7 +21,7 @@ void drawPixel(sf::RenderWindow& window, sf::Vector2i position, sf::Color color)
 // calls because they have low-level access to the framebuffer.
 // You can replace this method with your Bresenham's algorithms from Homework 1; the demo will run
 // slower, but it will more truly be *your* own work.
-void drawLine(sf::RenderWindow& window, sf::Vector2i start, sf::Vector2i end, sf::Color color) {
+void drawLine(sf::RenderWindow& window, glm::ivec2 start, glm::ivec2 end, sf::Color color) {
 	float sX{ static_cast<float>(start.x) };
 	float sY{ static_cast<float>(start.y) };
 	float eX{ static_cast<float>(end.x) };

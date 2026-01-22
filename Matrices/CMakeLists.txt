@@ -1,11 +1,12 @@
 ﻿# Add source to this project's executable.
-add_executable (Matrices "src/main.cpp" "include/lines.h" "include/triangles.h" "src/lines.cpp" "src/triangles.cpp"  "include/Mesh.h") 
+add_executable (Matrices "src/main.cpp" "include/Mesh.h") 
 
 find_package(SFML COMPONENTS System Window Graphics CONFIG REQUIRED)
 target_link_libraries(Matrices PRIVATE SFML::System SFML::Window SFML::Graphics)
 
 find_package(assimp CONFIG REQUIRED)
 target_link_libraries(Matrices PRIVATE assimp::assimp)
+target_link_libraries(Matrices PRIVATE common_drawing)
 
 target_include_directories(Matrices PUBLIC "./include")
 

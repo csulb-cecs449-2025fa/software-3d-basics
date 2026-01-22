@@ -12,6 +12,7 @@ endif()
 project ("Software3DBasics")
 
 # Include sub-projects.
+add_subdirectory("Common")
 add_subdirectory ("Static2D")
 add_subdirectory ("ClipSpace")
 add_subdirectory ("Vertex3D")
