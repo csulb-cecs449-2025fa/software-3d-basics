@@ -23,14 +23,14 @@ struct Frustum {
 };
 
 // Transforms from local coordinates to world coordinates.
-Vertex3D worldToView(const sf::Vector3f& cameraPosition, const sf::Vector3f& cameraOrientation,
+Vertex3D worldToView(const glm::vec3& cameraPosition, const glm::vec3& cameraOrientation,
 	const Vertex3D& vertex) {
 	// Assumption: the camera is put in the scene first by orienting it (yaw, pitch, roll), 
 	// then translating to its position. Instead of positioning the camera in the world, we 
 	// will invert the camera's transformation and apply it to each vertex.
 
 	// Reverse the position and orientation value.
-	sf::Vector3f cOrientation{ -cameraOrientation };
+	glm::vec3 cOrientation{ -cameraOrientation };
 
 	float translateX { vertex.x - cameraPosition.x };
 	float translateY { vertex.y - cameraPosition.y };
@@ -69,7 +69,7 @@ glm::ivec2 clipToScreen(const sf::View& viewport, const Vertex3D& clip) {
 }
 
 void drawMesh(sf::RenderWindow& window, const Frustum& frustum,
-	const sf::Vector3f& cameraPosition, const sf::Vector3f& cameraOrientation,
+	const glm::vec3 & cameraPosition, const glm::vec3 & cameraOrientation,
 	const std::vector<Vertex3D>& vertices, const std::vector<uint32_t>& faces, sf::Color color) {
 	// Loop through the list of face indexes, 3 at a time.
 	// Pull each vertex out of the vertices list.
@@ -147,8 +147,8 @@ int main() {
 	Frustum frustum{ near, far, l, r, b, t };
 
 	// Position the camera.
-	sf::Vector3f cameraPosition{ 0, 0, 3 };
-	sf::Vector3f cameraOrientation{ 0, 0, 0 };
+	glm::vec3 cameraPosition{ 0, 0, 3 };
+	glm::vec3 cameraOrientation{ 0, 0, 0 };
 
 
 	auto last{ c.getElapsedTime() };

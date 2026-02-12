@@ -14,9 +14,8 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-#include "triangles.h"
 #include "Mesh.h"
-
+#include "triangles.h"
 
 #define LOG_FPS
 
@@ -68,7 +67,7 @@ void assimpLoad(const std::string& path, std::vector<Vertex3D>& vertices, std::v
 }
 
 glm::mat4 buildModelMatrix(const glm::vec3& position, const glm::vec3& orientation, const glm::vec3& scale) {
-	glm::mat4 model = glm::mat4(1);
+	glm::mat4 model{ 1 };
 
 	return model;
 }

@@ -24,7 +24,7 @@ struct Frustum {
 
 // Transforms from local coordinates to world coordinates.
 Vertex3D localToWorld(
-	const sf::Vector3f& position, const sf::Vector3f& orientation, const sf::Vector3f& scale,
+	const glm::vec3& position, const glm::vec3& orientation, const glm::vec3& scale,
 	const Vertex3D& vertex) {
 	// Rotate, then scale, then translate.
 	// When rotating, we first yaw, then pitch, then roll.
@@ -57,13 +57,13 @@ Vertex3D localToWorld(
 }
 
 // Transforms from local coordinates to world coordinates.
-Vertex3D worldToView(const sf::Vector3f& cameraPosition, const sf::Vector3f& cameraOrientation, const Vertex3D& vertex) {
+Vertex3D worldToView(const glm::vec3& cameraPosition, const glm::vec3& cameraOrientation, const Vertex3D& vertex) {
 	// Assumption: the camera is put in the scene first by orienting it (yaw, pitch, roll), 
 	// then translating to its position. Instead of positioning the camera in the world, we 
 	// will invert the camera's transformation and apply it to each vertex.
 
 	// Reverse the position and orientation value.
-	sf::Vector3f cOrientation{ -cameraOrientation };
+	glm::vec3 cOrientation{ -cameraOrientation };
 
 	float translateX{ vertex.x - cameraPosition.x };
 	float translateY{ vertex.y - cameraPosition.y };
@@ -102,8 +102,8 @@ glm::ivec2 clipToScreen(const sf::View& viewport, const Vertex3D& clip) {
 }
 
 void drawMesh(sf::RenderWindow& window, const Frustum& frustum,
-	const sf::Vector3f& cameraPosition, const sf::Vector3f& cameraOrientation,
-	const sf::Vector3f& position, const sf::Vector3f& orientation, const sf::Vector3f& scale,
+	const glm::vec3& cameraPosition, const glm::vec3& cameraOrientation,
+	const glm::vec3& position, const glm::vec3& orientation, const glm::vec3& scale,
 	const std::vector<Vertex3D>& vertices, const std::vector<uint32_t>& faces, sf::Color color) {
 	// Loop through the list of face indexes, 3 at a time.
 	// Pull each vertex out of the vertices list.
@@ -174,19 +174,19 @@ int main() {
 	};
 
 	// Move "back" away from the camera.
-	sf::Vector3f position1{ sf::Vector3f{-1.5, 0, 0} };
+	glm::vec3 position1{ glm::vec3{-1.5, 0, 0} };
 	// Yaw 15 degrees, pitch 22.5 degrees.
-	sf::Vector3f orientation1{ sf::Vector3f{std::numbers::pi_v<float> / 12, std::numbers::pi_v<float> / 8, 0} };
+	glm::vec3 orientation1{ glm::vec3{std::numbers::pi_v<float> / 12, std::numbers::pi_v<float> / 8, 0} };
 	// 100% scale.
-	sf::Vector3f scale1{ sf::Vector3f{1, 1, 1} };
+	glm::vec3 scale1{ glm::vec3{1, 1, 1} };
 
-	sf::Vector3f position2{ sf::Vector3f{0, 0, -3} };
-	sf::Vector3f orientation2{ sf::Vector3f{0, 0, 0} };
-	sf::Vector3f scale2{ sf::Vector3f{2, 2, 2} };
+	glm::vec3 position2{ glm::vec3{0, 0, -3} };
+	glm::vec3 orientation2{ glm::vec3{0, 0, 0} };
+	glm::vec3 scale2{ glm::vec3{2, 2, 2} };
 
-	sf::Vector3f position3{ sf::Vector3f{0.5, 0, 1} };
-	sf::Vector3f orientation3{ sf::Vector3f{0, 0, std::numbers::pi_v<float> / 12} };
-	sf::Vector3f scale3{ sf::Vector3f{1, 1, 1} };
+	glm::vec3 position3{ glm::vec3{0.5, 0, 1} };
+	glm::vec3 orientation3{ glm::vec3{0, 0, std::numbers::pi_v<float> / 12} };
+	glm::vec3 scale3{ glm::vec3{1, 1, 1} };
 
 
 	// Construct the frustum. Start with parameters near, far, fovy, and aspect ratio
@@ -202,8 +202,8 @@ int main() {
 	Frustum frustum{ near, far, l, r, b, t };
 
 	// Position the camera.
-	sf::Vector3f cameraPosition{ 0, 0, 3 };
-	sf::Vector3f cameraOrientation{ 0, 0, 0 };
+	glm::vec3 cameraPosition{ 0, 0, 3 };
+	glm::vec3 cameraOrientation{ 0, 0, 0 };
 
 
 	auto last{ c.getElapsedTime() };

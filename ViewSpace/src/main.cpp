@@ -28,6 +28,7 @@ Vertex3D viewToClip(const Frustum& frustum, const Vertex3D& view) {
 	float yp{ view.y * -frustum.near / view.z };
 	float xClip{ xp / frustum.right };
 	float yClip{ yp / frustum.top };
+	// The z coordinate is ignored for now, but we could use it for depth testing later.
 	return Vertex3D{ xClip, yClip, 0.0f };
 }
 

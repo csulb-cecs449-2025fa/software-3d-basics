@@ -6,16 +6,13 @@
 */
 #include <SFML/Graphics.hpp>
 #include <iostream>
-#include <memory>
 #include <glm/ext.hpp>
 #include <vector>
-#include "triangles.h"
-#define _USE_MATH_DEFINES // for M_PI
-#include <math.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 #include <numbers>
+#include "triangles.h"
 
 
 #define LOG_FPS
@@ -69,7 +66,7 @@ void assimpLoad(const std::string& path, std::vector<Vertex3D>& vertices, std::v
 	}
 }
 
-Vertex3D localToWorld(const sf::Vector3f& position, const sf::Vector3f& orientation, const sf::Vector3f& scale,
+Vertex3D localToWorld(const glm::vec3& position, const glm::vec3& orientation, const glm::vec3& scale,
 	const Vertex3D& vertex) {
 	// Rotate, then scale, then translate.
 	// When rotating, we first yaw, then pitch, then roll.
@@ -101,13 +98,13 @@ Vertex3D localToWorld(const sf::Vector3f& position, const sf::Vector3f& orientat
 	return Vertex3D{ translateX, translateY, translateZ };
 }
 
-Vertex3D worldToView(const sf::Vector3f& cameraPosition, const sf::Vector3f& cameraOrientation, const Vertex3D& vertex) {
+Vertex3D worldToView(const glm::vec3& cameraPosition, const glm::vec3& cameraOrientation, const Vertex3D& vertex) {
 	// Assumption: the camera is put in the scene first by orienting it (yaw, pitch, roll), 
 	// then translating to its position. Instead of positioning the camera in the world, we 
 	// will invert the camera's transformation and apply it to each vertex.
 
 	// Reverse the position and orientation value.
-	sf::Vector3f cOrientation{ -cameraOrientation };
+	glm::vec3 cOrientation{ -cameraOrientation };
 
 	float translateX{ vertex.x - cameraPosition.x };
 	float translateY{ vertex.y - cameraPosition.y };
@@ -148,8 +145,8 @@ glm::ivec2 clipToScreen(const sf::View& viewport, const Vertex3D& clip) {
 }
 
 void drawMesh(sf::RenderWindow& window, const Frustum& frustum,
-	const sf::Vector3f& cameraPosition, const sf::Vector3f& cameraOrientation,
-	const sf::Vector3f& position, const sf::Vector3f& orientation, const sf::Vector3f& scale,
+	const glm::vec3& cameraPosition, const glm::vec3& cameraOrientation,
+	const glm::vec3& position, const glm::vec3& orientation, const glm::vec3& scale,
 	const std::vector<Vertex3D>& vertices, const std::vector<uint32_t>& faces, sf::Color color) {
 	// Loop through the list of face indexes, 3 at a time.
 	// Pull each vertex out of the vertices list.
@@ -195,9 +192,9 @@ int main() {
 	std::vector<uint32_t> bunnyFaces;
 	assimpLoad("models/bunny.obj", bunnyVertices, bunnyFaces);
 
-	sf::Vector3f bunnyPosition = sf::Vector3f(0, -1, -2.5);
-	sf::Vector3f bunnyOrientation = sf::Vector3f(0, 0, 0);
-	sf::Vector3f bunnyScale = sf::Vector3f(9, 9, 9);
+	glm::vec3 bunnyPosition{ 0, -1, -2.5 };
+	glm::vec3 bunnyOrientation{ 0, 0, 0 };
+	glm::vec3 bunnyScale{ 9, 9, 9 };
 
 
 	// Construct the frustum. Start with parameters near, far, fovy, and aspect ratio
@@ -213,8 +210,8 @@ int main() {
 	Frustum frustum{ near, far, r, t };
 
 	// Position the camera.
-	sf::Vector3f cameraPosition{ 0, 0, 1 };
-	sf::Vector3f cameraOrientation{ 0, 0, 0 };
+	glm::vec3 cameraPosition{ 0, 0, 1 };
+	glm::vec3 cameraOrientation{ 0, 0, 0 };
 
 	auto last = c.getElapsedTime();
 	while (window.isOpen()) {
@@ -234,7 +231,7 @@ int main() {
 #endif
 
 		// Rotate the bunny by incrementing the orientation. This is a "yaw" around the y axis.
-		bunnyOrientation.y += 0.1f;
+		bunnyOrientation.y += 0.01f;
 
 		// Render the scene.
 		window.clear();
