@@ -231,7 +231,8 @@ int main() {
 #endif
 
 		// Rotate the bunny by incrementing the orientation. This is a "yaw" around the y axis.
-		bunnyOrientation.y += 0.01f;
+		bunnyOrientation.y += 0.001f;
+		bunnyOrientation.z += 0.0003f;
 
 		// Render the scene.
 		window.clear();

@@ -73,7 +73,7 @@ glm::mat4 buildModelMatrix(const glm::vec3& position, const glm::vec3& orientati
 }
 
 // Linear interpolate from clip coordinates to screen coordinates.
-glm::ivec2 clipToScreen(const sf::View& viewport, const Vertex3D& clip) {
+glm::ivec2 clipToScreen(const sf::View& viewport, const glm::vec4& clip) {
 	int32_t xs{ static_cast<int32_t>(viewport.getSize().x * (clip.x + 1) / 2.0) };
 	int32_t ys{ static_cast<int32_t>(viewport.getSize().y - viewport.getSize().y * (clip.y + 1) / 2.0) };
 	return glm::ivec2{ xs, ys };
@@ -102,9 +102,9 @@ void drawMesh(sf::RenderWindow& window,
 
 		// TODO: transform vertexA, vertexB, and vertexC to clip space,
 		// by using the MVP matrix you constructed.
-		auto clipA{ localA };
-		auto clipB{ localB };
-		auto clipC{ localC };
+		glm::vec4 clipA{ localA.x, localA.y, localA.z, 1.0f};
+		glm::vec4 clipB{ localB.x, localB.y, localB.z, 1.0f };
+		glm::vec4 clipC{ localC.x, localC.y, localC.z, 1.0f };
 
 		auto& viewport{ window.getView() };
 		auto screenA{ clipToScreen(viewport, clipA) };
