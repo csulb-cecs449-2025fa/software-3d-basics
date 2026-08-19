@@ -19,8 +19,6 @@
 #include "Mesh.h"
 #include "triangles.h"
 
-#define LOG_FPS
-
 struct Frustum {
 	float near;
 	float far;
@@ -82,9 +80,9 @@ glm::mat4 buildModelMatrix(const glm::vec3& position, const glm::vec3& orientati
 }
 
 // Linear interpolate from clip coordinates to screen coordinates.
-glm::vec2 clipToScreen(const sf::View& viewport, const glm::vec4& clip) {
-	float xs{ static_cast<float>(viewport.getSize().x * (clip.x + 1) / 2.0) };
-	float ys{ static_cast<float>(viewport.getSize().y - viewport.getSize().y * (clip.y + 1) / 2.0) };
+glm::vec2 clipToScreen(const Framebuffer& framebuffer, const glm::vec4& clip) {
+	float xs{ static_cast<float>(framebuffer.width() * (clip.x + 1) / 2.0) };
+	float ys{ static_cast<float>(framebuffer.height() - framebuffer.height() * (clip.y + 1) / 2.0) };
 	return glm::vec2{ xs, ys };
 }
 
@@ -148,23 +146,24 @@ inline EdgeEq makeEdge(glm::vec2 v0, glm::vec2 v1) {
 	return e;
 }
 
-void fillTriangle(sf::RenderWindow& window, std::vector<uint8_t> &framebuffer, std::vector<float>& depth,
+void fillTriangle(Framebuffer& framebuffer, std::vector<float>& depth,
 	glm::vec2 screenA, glm::vec2 screenB, glm::vec2 screenC,
 	const Vertex3D& vertexA, const Vertex3D& vertexB, const Vertex3D& vertexC,
 	glm::vec4 clipA, glm::vec4 clipB, glm::vec4 clipC,
 	float invWA, float invWB, float invWC, const StbImage& texture) {
 
 	// compute the bounding box of the triangle
-	uint32_t minX{ static_cast<uint32_t>(std::floor(std::min({ screenA.x, screenB.x, screenC.x }))) };
-	uint32_t maxX{ static_cast<uint32_t>(std::ceil(std::max({ screenA.x, screenB.x, screenC.x }))) };
-	uint32_t minY{ static_cast<uint32_t>(std::floor(std::min({ screenA.y, screenB.y, screenC.y }))) };
-	uint32_t maxY{ static_cast<uint32_t>(std::ceil(std::max({ screenA.y, screenB.y, screenC.y }))) };
-	uint32_t W{ window.getSize().x };
-	uint32_t H{ window.getSize().y };
-	minX = std::max(minX, 0U);
-	minY = std::max(minY, 0U);
+	int minX{ static_cast<int>(std::floor(std::min({ screenA.x, screenB.x, screenC.x }))) };
+	int maxX{ static_cast<int>(std::ceil(std::max({ screenA.x, screenB.x, screenC.x }))) };
+	int minY{ static_cast<int>(std::floor(std::min({ screenA.y, screenB.y, screenC.y }))) };
+	int maxY{ static_cast<int>(std::ceil(std::max({ screenA.y, screenB.y, screenC.y }))) };
+	const int W{ framebuffer.width() };
+	const int H{ framebuffer.height() };
+	minX = std::max(minX, 0);
+	minY = std::max(minY, 0);
 	maxX = std::min(maxX, W - 1);
 	maxY = std::min(maxY, H - 1);
+	if (minX > maxX || minY > maxY) return;
 
 	int32_t texW{ static_cast<int32_t>(texture.getWidth()) };
 	int32_t texH{ static_cast<int32_t>(texture.getHeight()) };
@@ -202,13 +201,14 @@ void fillTriangle(sf::RenderWindow& window, std::vector<uint8_t> &framebuffer, s
 	float wC_stepX{ eC.A }, wC_stepY{ eC.B };
 
 	// loop through the bounding box, and test each pixel to see if it's inside the triangle
-	for (uint32_t y{ minY }; y <= maxY; ++y) {
+	for (int y{ minY }; y <= maxY; ++y) {
 		float wA{ wA_row };
 		float wB{ wB_row };
 		float wC{ wC_row };
-		uint32_t idx{ y * W + minX };
+		const size_t rowStart{ static_cast<size_t>(y) * static_cast<size_t>(W) + static_cast<size_t>(minX) };
 
-		for (uint32_t x{ minX }; x <= maxX; ++x, ++idx) {
+		for (int x{ minX }, offset{ 0 }; x <= maxX; ++x, ++offset) {
+			const size_t idx{ rowStart + static_cast<size_t>(offset) };
 			// Inside test (now one-sided because we normalized winding above)
 			if (wA >= 0.0f && wB >= 0.0f && wC >= 0.0f) {
 				// Barycentrics
@@ -250,10 +250,12 @@ void fillTriangle(sf::RenderWindow& window, std::vector<uint8_t> &framebuffer, s
 					int channels{ 4 };// texture.getBpp(); // verify: must be 3 or 4 BYTES per pixel
 					int tIdx{ (tv * texW + tu) * channels };
 
-					framebuffer[idx * 4 + 0] = texture.getData()[tIdx + 0];
-					framebuffer[idx * 4 + 1] = texture.getData()[tIdx + 1];
-					framebuffer[idx * 4 + 2] = texture.getData()[tIdx + 2];
-					framebuffer[idx * 4 + 3] = 255;
+					framebuffer.data()[idx] = Pixel{
+						texture.getData()[tIdx + 0],
+						texture.getData()[tIdx + 1],
+						texture.getData()[tIdx + 2],
+						255
+					};
 				}
 			}
 			wA += wA_stepX;
@@ -266,7 +268,7 @@ void fillTriangle(sf::RenderWindow& window, std::vector<uint8_t> &framebuffer, s
 	}
 }
 
-void drawMesh(sf::RenderWindow& window, std::vector<uint8_t>& framebuffer, std::vector<float> &depth,
+void drawMesh(Framebuffer& framebuffer, std::vector<float>& depth,
 	const glm::mat4& modelMatrix,
 	const glm::mat4& viewMatrix,
 	const glm::mat4& projectionMatrix,
@@ -300,19 +302,19 @@ void drawMesh(sf::RenderWindow& window, std::vector<uint8_t>& framebuffer, std::
 		clipA /= clipA.w;
 		clipB /= clipB.w;
 		clipC /= clipC.w;
-		auto& viewport{ window.getView() };
-		auto screenA{ clipToScreen(viewport, clipA) };
-		auto screenB{ clipToScreen(viewport, clipB) };
-		auto screenC{ clipToScreen(viewport, clipC) };
+		auto screenA{ clipToScreen(framebuffer, clipA) };
+		auto screenB{ clipToScreen(framebuffer, clipB) };
+		auto screenC{ clipToScreen(framebuffer, clipC) };
 
-		fillTriangle(window, framebuffer, depth, screenA, screenB, screenC, localA, localB, localC, clipA, clipB, clipC, invWA, invWB, invWC, texture);
+		fillTriangle(framebuffer, depth, screenA, screenB, screenC, localA, localB, localC, clipA, clipB, clipC, invWA, invWB, invWC, texture);
 	}
 }
 
 
 int main() {
 	sf::RenderWindow window{ sf::VideoMode::getFullscreenModes().at(0), "SFML Demo" };
-	sf::Clock c;
+	const auto windowSize{ window.getSize() };
+	Framebuffer framebuffer{ static_cast<int>(windowSize.x), static_cast<int>(windowSize.y) };
 
 	//std::vector<Vertex3D> bunnyVertices{ {-0.5, -0.5, 0, 1, 1}, {-0.5, 0.5, 0, .5, .5 }, {0.5, 0.5, 0., 1, 0.} };
 	//std::vector<uint32_t> bunnyFaces{0, 1, 2};
@@ -328,7 +330,7 @@ int main() {
 	glm::vec3 bunnyScale{ 9, 9, 9 };
 
 	float fovy{ 60.0f };
-	float ratio{ static_cast<float>(window.getSize().x) / (window.getSize().y) };
+	float ratio{ static_cast<float>(windowSize.x) / (windowSize.y) };
 	float near{ 0.1f };
 	float far{ 100.0f };
 	float t{ static_cast<float>(near * tan((fovy * std::numbers::pi_v<float> / 180.0f) / 2)) };
@@ -336,11 +338,10 @@ int main() {
 	float r{ t * ratio };
 	float l{ -r };
 
-	std::vector<float> depth(window.getSize().x * window.getSize().y);
-	auto last{ c.getElapsedTime() };
-	std::vector<uint8_t> framebuffer(window.getSize().x*window.getSize().y*4);
-	sf::Texture texture(window.getSize());
-	sf::Sprite sprite(texture);
+	std::vector<float> depth(windowSize.x * windowSize.y);
+	sf::Texture framebufferTexture(windowSize);
+	framebufferTexture.setSmooth(false);
+	sf::Sprite framebufferSprite(framebufferTexture);
 
 	while (window.isOpen()) {
 		// Check for events.
@@ -349,32 +350,24 @@ int main() {
 				window.close();
 			}
 		}
-		std::fill(framebuffer.begin(), framebuffer.end(), 0);
+		framebuffer.clear(Pixel{});
 		std::fill(depth.begin(), depth.end(), 1.0f);
 
 		//initialize a vector of size width*height to hold depth values for each pixel, and initialize them to some very large value (e.g. 1000.0f)
 
-
-#ifdef LOG_FPS
-		// FPS calculation.
-		auto now{ c.getElapsedTime() };
-		auto diff{ now - last };
-		std::cout << 1 / diff.asSeconds() << " FPS " << std::endl;
-		last = now;
-#endif
 
 		// Rotate the bunny by incrementing the orientation. This is a "yaw" around the y axis.
 		bunnyOrientation.y += 0.001f;
 
 		glm::mat4 bunnyModelMatrix{ buildModelMatrix(bunnyPosition, bunnyOrientation, bunnyScale) };
 		glm::mat4 viewMatrix{ 1 }; // identity matrix == camera at origin, looking down -z axis.
-		glm::mat4 projectionMatrix{ glm::perspective(glm::radians(60.0f), window.getSize().x / (float)window.getSize().y, 0.1f, 100.0f)};
+		glm::mat4 projectionMatrix{ glm::perspective(glm::radians(60.0f), windowSize.x / (float)windowSize.y, 0.1f, 100.0f)};
 
 		// Render the scene.
-		window.clear();
-		drawMesh(window, framebuffer, depth, bunnyModelMatrix, viewMatrix, projectionMatrix, bunnyVertices, bunnyFaces, tex);
-		texture.update(framebuffer.data());
-		window.draw(sprite);
+		drawMesh(framebuffer, depth, bunnyModelMatrix, viewMatrix, projectionMatrix, bunnyVertices, bunnyFaces, tex);
+		framebufferTexture.update(reinterpret_cast<const std::uint8_t*>(framebuffer.data().data()));
+		window.clear(sf::Color::Black);
+		window.draw(framebufferSprite);
 		window.display();
 	}
 

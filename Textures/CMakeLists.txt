@@ -8,6 +8,7 @@ find_package(assimp CONFIG REQUIRED)
 target_link_libraries(Textures PRIVATE assimp::assimp)
 target_link_libraries(Textures PRIVATE common_drawing)
 
+
 target_include_directories(Textures PUBLIC "./include")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)

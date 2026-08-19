@@ -1,7 +1,8 @@
-﻿# CMakeList.txt : Top-level CMake project file, do global configuration
+﻿
+# CMakeList.txt : Top-level CMake project file, do global configuration
 # and include sub-projects here.
 #
-cmake_minimum_required (VERSION 3.8)
+cmake_minimum_required(VERSION 3.21)
 
 # Enable Hot Reload for MSVC compilers if supported.
 if (POLICY CMP0141)
@@ -13,12 +14,18 @@ project ("Software3DBasics")
 
 # Include sub-projects.
 add_subdirectory("Common")
-add_subdirectory ("Static2D")
-add_subdirectory ("ClipSpace")
-add_subdirectory ("Vertex3D")
-add_subdirectory ("ViewSpace")
-add_subdirectory ("WorldSpace")
-add_subdirectory ("LocalSpace")
-add_subdirectory ("Matrices")
-add_subdirectory ("Assimp")
-add_subdirectory ("Textures")
+add_subdirectory("Static2D")
+add_subdirectory("ClipSpace")
+add_subdirectory("Vertex3D")
+add_subdirectory("ViewSpace")
+add_subdirectory("WorldSpace")
+add_subdirectory("LocalSpace")
+add_subdirectory("Matrices")
+add_subdirectory("Assimp")
+add_subdirectory("Textures")
+
+include(CTest)
+if(BUILD_TESTING)
+  add_subdirectory("tests")
+endif()
+

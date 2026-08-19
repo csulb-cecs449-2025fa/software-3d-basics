@@ -5,6 +5,7 @@
 * then to clip space using a frustum for a camera at (0, 0, 0) looking down the negative Z axis.
 */
 #include <SFML/Graphics.hpp>
+#include <cstdint>
 #include <iostream>
 #include <glm/ext.hpp>
 #include <vector>
@@ -16,8 +17,6 @@
 
 #include "Mesh.h"
 #include "triangles.h"
-
-#define LOG_FPS
 
 struct Frustum {
 	float near;
@@ -73,19 +72,19 @@ glm::mat4 buildModelMatrix(const glm::vec3& position, const glm::vec3& orientati
 }
 
 // Linear interpolate from clip coordinates to screen coordinates.
-glm::ivec2 clipToScreen(const sf::View& viewport, const glm::vec4& clip) {
-	int32_t xs{ static_cast<int32_t>(viewport.getSize().x * (clip.x + 1) / 2.0) };
-	int32_t ys{ static_cast<int32_t>(viewport.getSize().y - viewport.getSize().y * (clip.y + 1) / 2.0) };
+glm::ivec2 clipToScreen(const Framebuffer& framebuffer, const glm::vec4& clip) {
+	int32_t xs{ static_cast<int32_t>(framebuffer.width() * (clip.x + 1) / 2.0) };
+	int32_t ys{ static_cast<int32_t>(framebuffer.height() - framebuffer.height() * (clip.y + 1) / 2.0) };
 	return glm::ivec2{ xs, ys };
 }
 
-void drawMesh(sf::RenderWindow& window,
+void drawMesh(Framebuffer& framebuffer,
 	const glm::mat4& modelMatrix,
 	const glm::mat4& viewMatrix,
 	const glm::mat4& projectionMatrix,
 	const std::vector<Vertex3D>& vertices,
 	const std::vector<uint32_t>& faces,
-	sf::Color color) {
+	Pixel color) {
 
 	// TODO: first, construct a new 4x4 "MVP" matrix, by multiplying the
 	// model, view, and projection matrices as shown in lecture. The order matters!!!
@@ -106,12 +105,11 @@ void drawMesh(sf::RenderWindow& window,
 		glm::vec4 clipB{ localB.x, localB.y, localB.z, 1.0f };
 		glm::vec4 clipC{ localC.x, localC.y, localC.z, 1.0f };
 
-		auto& viewport{ window.getView() };
-		auto screenA{ clipToScreen(viewport, clipA) };
-		auto screenB{ clipToScreen(viewport, clipB) };
-		auto screenC{ clipToScreen(viewport, clipC) };
+		auto screenA{ clipToScreen(framebuffer, clipA) };
+		auto screenB{ clipToScreen(framebuffer, clipB) };
+		auto screenC{ clipToScreen(framebuffer, clipC) };
 
-		drawTriangle(window,
+		drawTriangle(framebuffer,
 			glm::ivec2{ screenA.x, screenA.y },
 			glm::ivec2{ screenB.x, screenB.y },
 			glm::ivec2{ screenC.x, screenC.y },
@@ -123,7 +121,11 @@ void drawMesh(sf::RenderWindow& window,
 
 int main() {
 	sf::RenderWindow window{ sf::VideoMode::getFullscreenModes().at(0), "SFML Demo" };
-	sf::Clock c;
+	const auto windowSize{ window.getSize() };
+	Framebuffer framebuffer{ static_cast<int>(windowSize.x), static_cast<int>(windowSize.y) };
+	sf::Texture framebufferTexture{ windowSize };
+	framebufferTexture.setSmooth(false);
+	sf::Sprite framebufferSprite{ framebufferTexture };
 
 	std::vector<Vertex3D> bunnyVertices{};
 	std::vector<uint32_t> bunnyFaces{};
@@ -134,15 +136,13 @@ int main() {
 	glm::vec3 bunnyScale{ 9, 9, 9 };
 
 	float fovy{ 60.0f };
-	float ratio{ static_cast<float>(window.getSize().x) / (window.getSize().y) };
+	float ratio{ static_cast<float>(windowSize.x) / (windowSize.y) };
 	float near{ 0.1f };
 	float far{ 100.0f };
 	float t{ static_cast<float>(near * tan((fovy * std::numbers::pi_v<float> / 180.0f) / 2)) };
 	float b{ -t };
 	float r{ t * ratio };
 	float l{ -r };
-
-	auto last{ c.getElapsedTime() };
 	while (window.isOpen()) {
 		// Check for events.
 		while (const std::optional event{ window.pollEvent() }) {
@@ -150,14 +150,6 @@ int main() {
 				window.close();
 			}
 		}
-
-#ifdef LOG_FPS
-		// FPS calculation.
-		auto now{ c.getElapsedTime() };
-		auto diff{ now - last };
-		std::cout << 1 / diff.asSeconds() << " FPS " << std::endl;
-		last = now;
-#endif
 
 		// Rotate the bunny by incrementing the orientation. This is a "yaw" around the y axis.
 		bunnyOrientation.y += 0.001f;
@@ -167,8 +159,11 @@ int main() {
 		glm::mat4 projectionMatrix{ 1 };
 
 		// Render the scene.
-		window.clear();
-		drawMesh(window, bunnyModelMatrix, viewMatrix, projectionMatrix, bunnyVertices, bunnyFaces, sf::Color::White);
+		framebuffer.clear(Pixel{});
+		drawMesh(framebuffer, bunnyModelMatrix, viewMatrix, projectionMatrix, bunnyVertices, bunnyFaces, Pixel{ 255, 255, 255, 255 });
+		framebufferTexture.update(reinterpret_cast<const std::uint8_t*>(framebuffer.data().data()));
+		window.clear(sf::Color::Black);
+		window.draw(framebufferSprite);
 		window.display();
 	}
 

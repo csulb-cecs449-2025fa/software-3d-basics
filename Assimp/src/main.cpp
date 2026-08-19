@@ -5,6 +5,7 @@
 * then to clip space using a frustum for a camera at (0, 0, 0) looking down the negative Z axis.
 */
 #include <SFML/Graphics.hpp>
+#include <cstdint>
 #include <iostream>
 #include <glm/ext.hpp>
 #include <vector>
@@ -15,7 +16,6 @@
 #include "triangles.h"
 
 
-#define LOG_FPS
 struct Vertex3D {
 	float x;
 	float y;
@@ -138,16 +138,16 @@ Vertex3D viewToClip(const Frustum& frustum, const Vertex3D& view) {
 }
 
 // Linear interpolate from clip coordinates to screen coordinates.
-glm::ivec2 clipToScreen(const sf::View& viewport, const Vertex3D& clip) {
-	int32_t xs{ static_cast<int32_t>(viewport.getSize().x * (clip.x + 1) / 2.0) };
-	int32_t ys{ static_cast<int32_t>(viewport.getSize().y - viewport.getSize().y * (clip.y + 1) / 2.0) };
+glm::ivec2 clipToScreen(const Framebuffer& framebuffer, const Vertex3D& clip) {
+	int32_t xs{ static_cast<int32_t>(framebuffer.width() * (clip.x + 1) / 2.0) };
+	int32_t ys{ static_cast<int32_t>(framebuffer.height() - framebuffer.height() * (clip.y + 1) / 2.0) };
 	return glm::ivec2{ xs, ys };
 }
 
-void drawMesh(sf::RenderWindow& window, const Frustum& frustum,
+void drawMesh(Framebuffer& framebuffer, const Frustum& frustum,
 	const glm::vec3& cameraPosition, const glm::vec3& cameraOrientation,
 	const glm::vec3& position, const glm::vec3& orientation, const glm::vec3& scale,
-	const std::vector<Vertex3D>& vertices, const std::vector<uint32_t>& faces, sf::Color color) {
+	const std::vector<Vertex3D>& vertices, const std::vector<uint32_t>& faces, Pixel color) {
 	// Loop through the list of face indexes, 3 at a time.
 	// Pull each vertex out of the vertices list.
 	// Transform them from clip coordinates to screen coordinates.
@@ -169,12 +169,11 @@ void drawMesh(sf::RenderWindow& window, const Frustum& frustum,
 		auto clipB{ viewToClip(frustum, viewB) };
 		auto clipC{ viewToClip(frustum, viewC) };
 
-		auto viewport{ window.getView() };
-		auto screenA{ clipToScreen(viewport, clipA) };
-		auto screenB{ clipToScreen(viewport, clipB) };
-		auto screenC{ clipToScreen(viewport, clipC) };
+		auto screenA{ clipToScreen(framebuffer, clipA) };
+		auto screenB{ clipToScreen(framebuffer, clipB) };
+		auto screenC{ clipToScreen(framebuffer, clipC) };
 
-		drawTriangle(window,
+		drawTriangle(framebuffer,
 			glm::ivec2{ screenA.x, screenA.y },
 			glm::ivec2{ screenB.x, screenB.y },
 			glm::ivec2{ screenC.x, screenC.y },
@@ -186,7 +185,11 @@ void drawMesh(sf::RenderWindow& window, const Frustum& frustum,
 
 int main() {
 	sf::RenderWindow window{ sf::VideoMode::getFullscreenModes().at(0), "SFML Demo" };
-	sf::Clock c;
+	const auto windowSize{ window.getSize() };
+	Framebuffer framebuffer{ static_cast<int>(windowSize.x), static_cast<int>(windowSize.y) };
+	sf::Texture framebufferTexture{ windowSize };
+	framebufferTexture.setSmooth(false);
+	sf::Sprite framebufferSprite{ framebufferTexture };
 
 	std::vector<Vertex3D> bunnyVertices;
 	std::vector<uint32_t> bunnyFaces;
@@ -200,7 +203,7 @@ int main() {
 	// Construct the frustum. Start with parameters near, far, fovy, and aspect ratio
 	// to compute right and top.
 	float fovy{ 60.0f };
-	float ratio{ static_cast<float>(window.getSize().x) / (window.getSize().y) };
+	float ratio{ static_cast<float>(windowSize.x) / (windowSize.y) };
 	float near{ 0.1f };
 	float far{ 100.0f };
 	float t{ static_cast<float>(near * tan((fovy * std::numbers::pi_v<float> / 180.0f) / 2)) };
@@ -213,7 +216,6 @@ int main() {
 	glm::vec3 cameraPosition{ 0, 0, 1 };
 	glm::vec3 cameraOrientation{ 0, 0, 0 };
 
-	auto last = c.getElapsedTime();
 	while (window.isOpen()) {
 		// Check for events.
 		while (const std::optional event = window.pollEvent()) {
@@ -221,26 +223,20 @@ int main() {
 				window.close();
 			}
 		}
-		
-#ifdef LOG_FPS
-		// FPS calculation.
-		auto now = c.getElapsedTime();
-		auto diff = now - last;
-		std::cout << 1 / diff.asSeconds() << " FPS " << std::endl;
-		last = now;
-#endif
-
 		// Rotate the bunny by incrementing the orientation. This is a "yaw" around the y axis.
 		bunnyOrientation.y += 0.001f;
 		bunnyOrientation.z += 0.0003f;
 
 		// Render the scene.
-		window.clear();
-		drawMesh(window, frustum, 
+		framebuffer.clear(Pixel{});
+		drawMesh(framebuffer, frustum,
 			cameraPosition, cameraOrientation,
 			bunnyPosition, bunnyOrientation, bunnyScale, 
 			bunnyVertices, bunnyFaces, 
-			sf::Color::White);
+			Pixel{ 255, 255, 255, 255 });
+		framebufferTexture.update(reinterpret_cast<const std::uint8_t*>(framebuffer.data().data()));
+		window.clear(sf::Color::Black);
+		window.draw(framebufferSprite);
 		window.display();
 	}
 

@@ -1,4 +1,13 @@
 #pragma once
-#include <SFML/Graphics.hpp>
-#include <glm/ext.hpp>
-void drawTriangle(sf::RenderWindow& window, glm::ivec2 a, glm::ivec2 b, glm::ivec2 c, sf::Color color);
+
+#include <glm/vec2.hpp>
+
+#include "framebuffer.h"
+
+void drawTriangle(
+	Framebuffer& framebuffer,
+	glm::ivec2 a,
+	glm::ivec2 b,
+	glm::ivec2 c,
+	Pixel color);
+

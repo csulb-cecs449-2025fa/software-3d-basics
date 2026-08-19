@@ -1,5 +1,9 @@
-﻿#pragma once
-#include <SFML/Graphics.hpp>
-#include <glm/ext.hpp>
-void drawPixel(sf::RenderWindow& window, glm::ivec2 position, sf::Color color);
-void drawLine(sf::RenderWindow& window, glm::ivec2 start, glm::ivec2 end, sf::Color color);
+#pragma once
+
+#include <glm/vec2.hpp>
+
+#include "framebuffer.h"
+
+void drawPixel(Framebuffer& framebuffer, glm::ivec2 position, Pixel color);
+void drawLine(Framebuffer& framebuffer, glm::ivec2 start, glm::ivec2 end, Pixel color);
+

@@ -8,6 +8,7 @@ find_package(assimp CONFIG REQUIRED)
 target_link_libraries(ViewCoordinates PRIVATE assimp::assimp)
 target_link_libraries(ViewCoordinates PRIVATE common_drawing)
 
+
 target_include_directories(ViewCoordinates PUBLIC "./include")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)

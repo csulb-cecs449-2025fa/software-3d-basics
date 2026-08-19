@@ -1,34 +1,40 @@
 #include "lines.h"
-#include <SFML/Graphics.hpp>
-#include <array>
 
-void drawPixel(sf::RenderWindow& window, glm::ivec2 position, sf::Color color) {
-	float pX{ static_cast<float>(position.x) };
-	float pY{ static_cast<float>(position.y) };
+#include <cstdlib>
 
-	std::array<sf::Vertex, 1> pixel{
-		sf::Vertex{
-			sf::Vector2f{pX, pY},
-			color
+void drawPixel(Framebuffer& framebuffer, glm::ivec2 position, Pixel color) {
+	framebuffer.setPixel(position, color);
+}
+
+void drawLine(
+	Framebuffer& framebuffer,
+	glm::ivec2 start,
+	glm::ivec2 end,
+	Pixel color) {
+	int x{ start.x };
+	int y{ start.y };
+	const int dx{ std::abs(end.x - start.x) };
+	const int sx{ start.x < end.x ? 1 : -1 };
+	const int dy{ -std::abs(end.y - start.y) };
+	const int sy{ start.y < end.y ? 1 : -1 };
+	int error{ dx + dy };
+
+	while (true) {
+		drawPixel(framebuffer, glm::ivec2{ x, y }, color);
+
+		if (x == end.x && y == end.y) {
+			break;
 		}
-	};
-	window.draw(pixel.data(), 1, sf::PrimitiveType::Points);
+
+		const int doubledError{ 2 * error };
+		if (doubledError >= dy) {
+			error += dy;
+			x += sx;
+		}
+		if (doubledError <= dx) {
+			error += dx;
+			y += sy;
+		}
+	}
 }
 
-// This version of drawLine uses SFML to more-efficiently draw the line, instead of using repeated
-// calls to our drawPixel.
-// SFML uses Bresenham's algorithm like us; but they avoid the overhead of multiple "draw a pixel"
-// calls because they have low-level access to the framebuffer.
-// You can replace this method with your Bresenham's algorithms from Homework 1; the demo will run
-// slower, but it will more truly be *your* own work.
-void drawLine(sf::RenderWindow& window, glm::ivec2 start, glm::ivec2 end, sf::Color color) {
-	float sX{ static_cast<float>(start.x) };
-	float sY{ static_cast<float>(start.y) };
-	float eX{ static_cast<float>(end.x) };
-	float eY{ static_cast<float>(end.y) };
-	std::array<sf::Vertex, 2> points{
-		sf::Vertex{sf::Vector2f{sX, sY}, color},
-		sf::Vertex{sf::Vector2f{eX, eY}, color}
-	};
-	window.draw(points.data(), 2, sf::PrimitiveType::Lines);
-}

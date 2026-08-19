@@ -8,6 +8,7 @@ find_package(assimp CONFIG REQUIRED)
 target_link_libraries(Static2D PRIVATE assimp::assimp)
 target_link_libraries(Static2D PRIVATE common_drawing)
 
+
 target_include_directories(Static2D PUBLIC "./include")
 
 if (CMAKE_VERSION VERSION_GREATER 3.12)

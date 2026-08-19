@@ -1,84 +1,76 @@
-﻿#include <SFML/Graphics.hpp>
-#include <iostream>
+#include <SFML/Graphics.hpp>
 
-#include <memory>
-#include <glm/ext.hpp>
+#include <cstdint>
+#include <optional>
 #include <vector>
+
 #include "triangles.h"
 
-#define LOG_FPS
 struct Vertex2D {
 	int32_t x;
 	int32_t y;
 };
 
-void drawMesh(sf::RenderWindow& window, const std::vector<Vertex2D>& vertices, const std::vector<uint32_t>& faces) {
-	// Loop through the list of face indexes, 3 at a time.
-	// Pull each vertex out of the vertices list.
-	// Draw a triangle connecting them.
-	for (size_t i{ 0 }; i < faces.size(); i = i + 3) {
-		auto& vertexA{ vertices[faces[i]] };
-		auto& vertexB{ vertices[faces[i + 1]] };
-		auto& vertexC{ vertices[faces[i + 2]] };
+void drawMesh(
+	Framebuffer& framebuffer,
+	const std::vector<Vertex2D>& vertices,
+	const std::vector<uint32_t>& faces) {
+	for (size_t i{ 0 }; i < faces.size(); i += 3) {
+		const auto& vertexA{ vertices[faces[i]] };
+		const auto& vertexB{ vertices[faces[i + 1]] };
+		const auto& vertexC{ vertices[faces[i + 2]] };
 
-		drawTriangle(window,
-			glm::ivec2 { vertexA.x, vertexA.y },
-			glm::ivec2 { vertexB.x, vertexB.y },
-			glm::ivec2 { vertexC.x, vertexC.y },
-			sf::Color::White
-		);
+		drawTriangle(
+			framebuffer,
+			glm::ivec2{ vertexA.x, vertexA.y },
+			glm::ivec2{ vertexB.x, vertexB.y },
+			glm::ivec2{ vertexC.x, vertexC.y },
+			Pixel{ 255, 255, 255, 255 });
 	}
 }
 
-
 int main() {
-	sf::RenderWindow window{ sf::VideoMode::getFullscreenModes().at(0), "SFML Demo" };
-	sf::Clock c;
-
-	// Define the vertices and faces of the mesh we're drawing.
-	std::vector<Vertex2D> houseVertices {
-		{300, 300},
-		{600, 300},
-		{300, 500},
-		{600, 500},
-		{450, 150}
+	sf::RenderWindow window{
+		sf::VideoMode::getFullscreenModes().at(0),
+		"Static 2D"
 	};
-	std::vector<uint32_t> houseFaces {
+	const auto windowSize{ window.getSize() };
+	Framebuffer framebuffer{
+		static_cast<int>(windowSize.x),
+		static_cast<int>(windowSize.y),
+		Pixel{}
+	};
+	sf::Texture framebufferTexture{ windowSize };
+	framebufferTexture.setSmooth(false);
+	sf::Sprite framebufferSprite{ framebufferTexture };
+
+	const std::vector<Vertex2D> houseVertices{
+		{ 300, 300 },
+		{ 600, 300 },
+		{ 300, 500 },
+		{ 600, 500 },
+		{ 450, 150 }
+	};
+	const std::vector<uint32_t> houseFaces{
 		0, 1, 2, 1, 3, 2, 0, 4, 1
 	};
 
-
-	auto last{ c.getElapsedTime() };
 	while (window.isOpen()) {
-		// Check for events.
 		while (const std::optional event{ window.pollEvent() }) {
 			if (event->is<sf::Event::Closed>()) {
 				window.close();
 			}
 		}
 
-#ifdef LOG_FPS
-		// FPS calculation.
-		auto now{ c.getElapsedTime() };
-		auto diff{ now - last };
-		std::cout << 1 / diff.asSeconds() << " FPS " << std::endl;
-		last = now;
-#endif
-		// Render the scene.
-		window.clear();
-		drawMesh(window, houseVertices, houseFaces);
+		framebuffer.clear(Pixel{});
+		drawMesh(framebuffer, houseVertices, houseFaces);
+
+		framebufferTexture.update(
+			reinterpret_cast<const std::uint8_t*>(framebuffer.data().data()));
+		window.clear(sf::Color::Black);
+		window.draw(framebufferSprite);
 		window.display();
 	}
 
 	return 0;
 }
-
-// What if we wanted to position things with *relative* coordinates,
-// instead of pixel coordinates?
-// We introduce NORMALIZED DEVICE COORDINATES, aka Clip Coordinates.
-// Middle of the screen is (0, 0). 
-// Lower left is (-1, -1).
-// Upper right is (1, 1).
-
-// Where is (1, 0)?
-// Where is (-0.5, 0.25)?
